@@ -1,3 +1,6 @@
+import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.io.BufferedReader;
@@ -68,38 +71,44 @@ public class FileListMaker {
         arrList.clear();
     }
 
-    private static void open() {
-        Scanner sc = new Scanner(System.in);
-        if (saved) {
-            System.out.print("Current list has unsaved changes. Do you want to save it first? (Y/N) ");
-            String answer = sc.nextLine().toUpperCase();
-            if (answer.equals("Y")) {
-                save();
-                //this is the reminder to save
+    private static String open() {
+        if (saved)
+        {
+            String prompt = "Would you like o open a new list?";
+            boolean deleteListYN = SaferInputLol.getYNConfirm(in, prompt);
+            if (!deleteListYN) {
+                return "";
             }
         }
-        System.out.print("Enter filename to load: ");
-        String filename = sc.nextLine();
-        File file = new File(filename + ".txt");
-        if (file.exists()) {
-            try {
-                BufferedReader reader = new BufferedReader(new FileReader(file));
-                String line;
-                list.clear();
-                while ((line = reader.readLine()) != null) {
+        clear(list);
+        Scanner inFile;
+        JFileChooser chooser = new JFileChooser();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter("TEXT FILES", "txt", "text");
+        chooser.setFileFilter(filter);
+        String line;
+
+        Path target = new File(System.getProperty("user.dir")).toPath();
+        target = target.resolve("src");
+        chooser.setCurrentDirectory(target.toFile());
+
+        try {
+            if (chooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
+                target = chooser.getSelectedFile().toPath();
+                inFile = new Scanner(target);
+                System.out.println("Opened " + target.getFileName());
+                while (inFile.hasNextLine()) {
+                    line = inFile.nextLine();
                     list.add(line);
                 }
-                fName = filename;
-                saved = false;
-                System.out.println("List loaded.");
-                reader.close();
-            } catch (IOException e) {
-                System.out.println("Error reading file: " + e.getMessage());
+                inFile.close();
+            } else { // user did not select a file
+                System.out.println("Please select a new file");
             }
-        } else {
-            System.out.println("File not found.");
-            //error loading file
+        } catch (IOException e)
+        {
+            System.out.println("IOException Error");
         }
+        return target.toFile().toString();
     }
 
 
